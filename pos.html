@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Business POS SaaS</title>
+<style>
+body { font-family: Arial; background:#eef3f8; padding:20px; }
+.container { max-width:1200px; margin:auto; background:white; padding:20px; border-radius:12px; }
+h1 { text-align:center; }
+input, button, select { padding:10px; margin:5px; }
+table { width:100%; margin-top:20px; border-collapse:collapse; }
+th, td { border:1px solid #ddd; padding:10px; text-align:center; }
+.header { display:flex; justify-content:space-between; align-items:center; }
+</style>
+</head>
+<body>
+
+<div class="container">
+<div class="header">
+<h1>🏪 Business POS System</h1>
+<button onclick="logout()">Logout</button>
+</div>
+
+<h3>Shop Info</h3>
+<input type="text" id="shopName" placeholder="Shop Name">
+<input type="text" id="logo" placeholder="Logo URL">
+<button onclick="saveShop()">Save Shop</button>
+
+<h3>Add Product</h3>
+<input type="text" id="name" placeholder="Product Name">
+<input type="number" id="price" placeholder="Price">
+<button onclick="addProduct()">Add</button>
+
+<h3>Sell</h3>
+<select id="productList"></select>
+<input type="number" id="qty" placeholder="Qty">
+<button onclick="addToCart()">Add</button>
+<button onclick="checkout()">Checkout</button>
+
+<table>
+<thead>
+<tr>
+<th>Name</th><th>Price</th><th>Qty</th><th>Total</th>
+</tr>
+</thead>
+<tbody id="cart"></tbody>
+</table>
+
+<p><b>Total: <span id="grand">0</span></b></p>
+
+<h3>📊 Dashboard</h3>
+<p>Total Orders: <span id="orders">0</span></p>
+<p>Total Sales: <span id="sales">0</span></p>
+
+<button onclick="downloadInvoice()">Download Invoice</button>
+</div>
+
+<script>
+let products = JSON.parse(localStorage.getItem('products'))||[];
+let cart = [];
+let sales = JSON.parse(localStorage.getItem('sales'))||0;
+let orders = JSON.parse(localStorage.getItem('orders'))||0;
+
+function saveShop(){
+  localStorage.setItem('shop', JSON.stringify({
+    name: shopName.value,
+    logo: logo.value
+  }));
+  alert('Saved');
+}
+
+function addProduct(){
+  if(!name.value||!price.value) return;
+  products.push({name:name.value,price:+price.value});
+  localStorage.setItem('products',JSON.stringify(products));
+  loadProducts();
+}
+
+function loadProducts(){
+  productList.innerHTML='';
+  products.forEach((p,i)=>{
+    productList.innerHTML += `<option value="${i}">${p.name}-${p.price}</option>`;
+  });
+}
+
+function addToCart(){
+  let p = products[productList.value];
+  let q = +qty.value;
+  if(!q) return;
+  cart.push({...p,qty:q});
+  render();
+}
+
+function render(){
+  let total=0; cartHTML='';
+  cart.forEach(i=>{
+    let t=i.price*i.qty; total+=t;
+    cartHTML+=`<tr><td>${i.name}</td><td>${i.price}</td><td>${i.qty}</td><td>${t}</td></tr>`;
+  });
+  cart.innerHTML=cartHTML;
+  grand.innerText=total;
+}
+
+function checkout(){
+  let total=0; cart.forEach(i=>total+=i.price*i.qty);
+  sales+=total; orders++;
+  localStorage.setItem('sales',sales);
+  localStorage.setItem('orders',orders);
+  alert('Done'); cart=[]; render(); updateDashboard();
+}
+
+function updateDashboard(){
+  document.getElementById('sales').innerText=sales;
+  document.getElementById('orders').innerText=orders;
+}
+
+function downloadInvoice(){
+  let text='Invoice\n';
+  cart.forEach(i=> text+=`${i.name} x${i.qty} = ${i.price*i.qty}\n`);
+  let blob=new Blob([text]);
+  let a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='invoice.txt';
+  a.click();
+}
+
+function logout(){ location.reload(); }
+
+loadProducts(); updateDashboard();
+</script>
+
+</body>
+</html>
